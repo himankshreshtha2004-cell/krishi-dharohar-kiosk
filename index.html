@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Krishi Dharohar Kiosk — Interactive Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Tiro+Devanagari+Hindi&family=Cormorant+Garamond:ital,wght@1,500&display=swap">
+<style>
+  :root{
+    --bg:#16130f; --panel:#201b15; --line:#3a3128; --text:#f3ead9; --muted:#a99b85;
+    --gold:#d4882a; --gold-2:#f0b85a; --green:#3f8f4a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Manrope,system-ui,sans-serif}
+  body{display:flex;min-height:100vh}
+  .app{display:flex;gap:28px;width:100%;padding:24px;align-items:stretch}
+
+  /* Kiosk */
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;position:relative}
+  .bezel{position:relative;background:#0b0907;border-radius:28px;padding:14px;box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 0 0 1px #2c251d}
+  .screen{position:relative;overflow:hidden;border-radius:16px;background:#fbf3e2}
+  .screen iframe{position:absolute;top:0;left:0;width:1080px;height:1920px;border:0;transform-origin:0 0;transition:opacity .35s ease}
+  .screen iframe.back{opacity:0;pointer-events:none}
+  .scanner-pad{position:absolute;left:50%;bottom:-6px;transform:translate(-50%,100%);width:150px;height:22px;border-radius:0 0 14px 14px;background:#0b0907;display:flex;justify-content:center;align-items:center}
+  .scanner-pad i{width:46px;height:5px;border-radius:4px;background:#3a3128;transition:background .2s, box-shadow .2s}
+  .scanner-pad.flash i{background:#7cd38a;box-shadow:0 0 14px #7cd38a}
+
+  /* Panel */
+  .panel{width:360px;flex-shrink:0;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:18px;overflow:auto;max-height:calc(100vh - 48px)}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  h1{margin:4px 0 0;font-size:20px;line-height:1.25}
+  h1 .hi{font-family:'Tiro Devanagari Hindi',serif;color:var(--gold-2);font-weight:400}
+  .sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+  .now{display:flex;align-items:center;justify-content:space-between;background:#16120d;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .now b{font-size:15px}
+  .now small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);flex-shrink:0;margin-right:10px}
+  .idle{height:4px;background:#2c251d;border-radius:4px;overflow:hidden;margin-top:10px}
+  .idle span{display:block;height:100%;width:0;background:var(--gold)}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .card{appearance:none;border:1px solid var(--line);background:linear-gradient(160deg,#2a231b,#1c1813);color:var(--text);border-radius:14px;padding:12px;text-align:left;cursor:pointer;transition:transform .15s,border-color .15s,background .15s;font:inherit;position:relative}
+  .card:hover{transform:translateY(-2px);border-color:var(--gold)}
+  .card.active{border-color:var(--gold-2);background:linear-gradient(160deg,#3b2a14,#241a0e)}
+  .card .hi{font-family:'Tiro Devanagari Hindi',serif;font-size:22px;line-height:1.2;color:var(--gold-2)}
+  .card .en{font-size:13px;font-weight:700}
+  .card .meta{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.35}
+  .card kbd{position:absolute;top:10px;right:10px}
+  .card.home{grid-column:1 / -1;display:flex;align-items:center;justify-content:space-between}
+  kbd{font-family:Manrope,sans-serif;font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--muted);background:#16120d}
+  .section-title{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .flow{display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5}
+  .flow div{display:flex;gap:10px}
+  .flow em{font-style:normal;color:var(--gold-2);font-weight:700;width:18px;flex-shrink:0}
+  .row{display:flex;gap:8px}
+  .btn{appearance:none;flex:1;border:1px solid var(--line);background:#16120d;color:var(--text);border-radius:10px;padding:9px 10px;font:600 13px Manrope,sans-serif;cursor:pointer}
+  .btn:hover{border-color:var(--gold)}
+  .note{font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding-top:14px}
+  .toast{position:absolute;top:18px;left:50%;transform:translate(-50%,-20px);opacity:0;background:rgba(22,18,13,.92);border:1px solid var(--gold);color:var(--text);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;transition:all .25s;pointer-events:none;z-index:5;white-space:nowrap}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:860px){
+    .app{flex-direction:column;padding:14px;gap:16px}
+    .panel{width:100%;max-height:none}
+    .stage{align-items:flex-start;padding-bottom:26px;flex:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage" id="stage">
+    <div class="toast" id="toast"></div>
+    <div class="bezel" id="bezel">
+      <div class="screen" id="screen">
+        <iframe id="fA" title="Kiosk screen"></iframe>
+        <iframe id="fB" class="back" title="Kiosk screen (buffer)"></iframe>
+      </div>
+      <div class="scanner-pad" id="pad"><i></i></div>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <div>
+      <div class="eyebrow">Interactive prototype · 1080 × 1920 kiosk</div>
+      <h1><span class="hi">भारत की कृषि धरोहर</span><br>Agricultural Heritage of India</h1>
+      <p class="sub">All six screens from the team, wired together. Tap a crop card below to "scan" it the way a visitor would on the RFID reader.</p>
+    </div>
+
+    <div>
+      <div class="now">
+        <div style="display:flex;align-items:center"><span class="dot"></span><div><b id="nowTitle">Home · attract screen</b><small id="nowSub">Waiting for a crop card</small></div></div>
+      </div>
+      <div class="idle" id="idleWrap" style="visibility:hidden"><span id="idleBar"></span></div>
+    </div>
+
+    <div>
+      <p class="section-title">Scanner simulator — place a card</p>
+      <div class="cards" id="cards"></div>
+    </div>
+
+    <div class="row">
+      <button class="btn" id="replay">↻ Replay screen</button>
+      <button class="btn" id="tour">▶ Auto tour</button>
+      <button class="btn" id="fs">⛶ Full screen</button>
+    </div>
+
+    <div>
+      <p class="section-title">How the kiosk behaves</p>
+      <div class="flow">
+        <div><em>1</em><span><b>Attract screen.</b> Title, glowing India map, drifting seeds and a pulsing scanner orb ask visitors to place a crop card.</span></div>
+        <div><em>2</em><span><b>Card scanned.</b> A wipe transition opens that crop: map highlights the top producing states (numbered), legend cards show each state's share, then production figure and 5-year trend bars animate in.</span></div>
+        <div><em>3</em><span><b>Another card.</b> Placing a different card switches straight to that crop.</span></div>
+        <div><em>4</em><span><b>Idle.</b> The thin bar at the bottom counts down 45 s; with no new card the kiosk returns to the attract screen.</span></div>
+      </div>
+    </div>
+
+    <p class="note">Keyboard: <kbd>1</kbd>–<kbd>5</kbd> scan a crop, <kbd>H</kbd> or <kbd>Esc</kbd> home, <kbd>R</kbd> replay. The exported files contained the screen designs only; the scan and idle logic here is a simulation of how the real app is meant to behave.</p>
+  </aside>
+</div>
+
+<script>
+(function(){
+  var CROPS=[
+    {id:'rice',hi:'चावल',en:'Rice',meta:'Cereal · Kharif · 137.8 Mt'},
+    {id:'wheat',hi:'गेहूँ',en:'Wheat',meta:'Cereal · Rabi · 113.3 Mt'},
+    {id:'pulses',hi:'दालें',en:'Pulses',meta:'Legume · Kharif & Rabi · 24.2 Mt'},
+    {id:'oilseeds',hi:'तिलहन',en:'Oilseeds',meta:'Oil crop · Kharif & Rabi · 39.7 Mt'},
+    {id:'sugarcane',hi:'गन्ना',en:'Sugarcane',meta:'Cash crop · Annual · 453.2 Mt'}
+  ];
+  var IDLE_MS=45000;
+  var fA=document.getElementById('fA'), fB=document.getElementById('fB');
+  var front=fA, back=fB, current=null, idleTimer=null, idleStart=0, raf=null, tourTimer=null;
+  var cardsEl=document.getElementById('cards');
+
+  // Build cards
+  CROPS.forEach(function(c,i){
+    var b=document.createElement('button');
+    b.className='card'; b.dataset.id=c.id;
+    b.innerHTML='<kbd>'+(i+1)+'</kbd><div class="hi">'+c.hi+'</div><div class="en">'+c.en+'</div><div class="meta">'+c.meta+'</div>';
+    b.onclick=function(){stopTour();scan(c.id);};
+    cardsEl.appendChild(b);
+  });
+  var hb=document.createElement('button');
+  hb.className='card home'; hb.dataset.id='home';
+  hb.innerHTML='<div><div class="en">Remove card · back to home</div><div class="meta">Shows the attract screen</div></div><kbd style="position:static">H</kbd>';
+  hb.onclick=function(){stopTour();show('home');};
+  cardsEl.appendChild(hb);
+
+  // Scale kiosk to fit
+  function fit(){
+    var stage=document.getElementById('stage'), screen=document.getElementById('screen');
+    var mobile=window.innerWidth<=860;
+    var w=(mobile? window.innerWidth-28 : stage.clientWidth)-28, h=(mobile? window.innerHeight*0.74 : stage.clientHeight)-60;
+    var s=Math.max(0.12,Math.min(w/1080,h/1920));
+    screen.style.width=(1080*s)+'px'; screen.style.height=(1920*s)+'px';
+    [fA,fB].forEach(function(f){f.style.transform='scale('+s+')';});
+  }
+  window.addEventListener('resize',fit);
+
+  function label(id){
+    if(id==='home') return ['Home · attract screen','Waiting for a crop card'];
+    var c=CROPS.find(function(x){return x.id===id;});
+    return [c.hi+' · '+c.en,c.meta];
+  }
+
+  function toast(t){
+    var el=document.getElementById('toast'); el.textContent=t; el.classList.add('show');
+    clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove('show');},1600);
+  }
+
+  function show(id,force){
+    if(id===current && !force) { if(id!=='home') startIdle(); return; }
+    current=id;
+    try{ if(location.hash!=='#'+id) history.replaceState(null,'','#'+id); }catch(e){}
+    var l=label(id);
+    document.getElementById('nowTitle').textContent=l[0];
+    document.getElementById('nowSub').textContent=l[1];
+    document.querySelectorAll('.card').forEach(function(b){b.classList.toggle('active',b.dataset.id===id);});
+    var target=back;
+    target.onload=function(){
+      target.onload=null;
+      target.classList.remove('back'); front.classList.add('back');
+      var old=front; front=target; back=old;
+      setTimeout(function(){ if(back!==front) back.src='about:blank'; },400);
+    };
+    target.src='screens/'+id+'.html';
+    if(id==='home') stopIdle(); else startIdle();
+  }
+
+  function scan(id){
+    var pad=document.getElementById('pad'); pad.classList.add('flash');
+    setTimeout(function(){pad.classList.remove('flash');},500);
+    var c=CROPS.find(function(x){return x.id===id;});
+    toast('Card scanned: '+c.en+' ('+c.hi+')');
+    if(id===current){ show(id,true); } else show(id);
+  }
+
+  // Idle countdown (matches the 45 s bar inside the crop screens)
+  function startIdle(){
+    stopIdle(); idleStart=Date.now();
+    document.getElementById('idleWrap').style.visibility='visible';
+    idleTimer=setTimeout(function(){ toast('No card for 45 s — returning home'); show('home'); },IDLE_MS);
+    (function tick(){
+      var p=Math.min(1,(Date.now()-idleStart)/IDLE_MS);
+      document.getElementById('idleBar').style.width=(100-p*100)+'%';
+      raf=requestAnimationFrame(tick);
+    })();
+  }
+  function stopIdle(){
+    clearTimeout(idleTimer); cancelAnimationFrame(raf);
+    document.getElementById('idleWrap').style.visibility='hidden';
+  }
+
+  // Auto tour: home → each crop for 9 s → home
+  function stopTour(){ if(tourTimer){clearTimeout(tourTimer);tourTimer=null;document.getElementById('tour').textContent='▶ Auto tour';} }
+  document.getElementById('tour').onclick=function(){
+    if(tourTimer){stopTour();return;}
+    this.textContent='■ Stop tour';
+    var seq=['home'].concat(CROPS.map(function(c){return c.id;})).concat(['home']), i=0;
+    (function step(){
+      var id=seq[i++]; if(!id){stopTour();return;}
+      if(id==='home') show('home'); else scan(id);
+      tourTimer=setTimeout(step, id==='home'?5000:9000);
+    })();
+  };
+
+  document.getElementById('replay').onclick=function(){ show(current||'home',true); };
+  document.getElementById('fs').onclick=function(){
+    var el=document.getElementById('bezel');
+    try{ (el.requestFullscreen||el.webkitRequestFullscreen).call(el).catch(function(){}); }catch(e){}
+  };
+  document.addEventListener('fullscreenchange',function(){
+    var screen=document.getElementById('screen');
+    if(document.fullscreenElement){
+      var s=Math.min(window.innerWidth/1080,window.innerHeight/1920);
+      screen.style.width=(1080*s)+'px'; screen.style.height=(1920*s)+'px';
+      [fA,fB].forEach(function(f){f.style.transform='scale('+s+')';});
+    } else fit();
+  });
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k>='1'&&k<='5'){stopTour();scan(CROPS[+k-1].id);}
+    else if(k==='h'||k==='H'||k==='Escape'){stopTour();show('home');}
+    else if(k==='r'||k==='R'){show(current||'home',true);}
+  });
+
+  window.addEventListener('hashchange',function(){
+    var h=location.hash.slice(1);
+    if(h==='home'||CROPS.some(function(c){return c.id===h;})) show(h);
+  });
+
+  fit();
+  var start=location.hash.slice(1);
+  show(start && (start==='home'||CROPS.some(function(c){return c.id===start;})) ? start : 'home');
+})();
+</script>
+</body>
+</html>
